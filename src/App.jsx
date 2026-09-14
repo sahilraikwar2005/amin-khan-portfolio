@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import emailjs from '@emailjs/browser'
 import { ArrowDown, ArrowUpRight, Menu, X } from 'lucide-react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -9,6 +10,11 @@ import './App.css'
 gsap.registerPlugin(ScrollTrigger)
 
 const image = (name) => `/portfolio/${name}.jpeg`
+const emailjsConfig = {
+  serviceId: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+  templateId: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+  publicKey: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+}
 
 // These projects are displayed in the featured and gallery sections.
 const projects = [
@@ -37,7 +43,22 @@ function App() {
   const [showAllProjects, setShowAllProjects] = useState(false)
   const pageRef = useRef(null)
   const lenisRef = useRef(null)
-  const whatsappUrl = `https://wa.me/919131080455?text=${encodeURIComponent("Hey Sahil! I'm interested in your work and would love to discuss my project with you. I just submitted an inquiry through your website.")}`
+  const whatsappNumber = '919131080455'
+  const createWhatsappUrl = (details = {}) => {
+    const { name = '', email = '', phone = '', message = '' } = details
+    const whatsappMessage = [
+      'Hi Amin! I would like to discuss my interior design project.',
+      '',
+      `Name: ${name || 'Not provided'}`,
+      `Email: ${email || 'Not provided'}`,
+      `Phone: ${phone || 'Not provided'}`,
+      '',
+      'Project details:',
+      message || 'I would love to share more about my project.',
+    ].join('\n')
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
+  }
+  const whatsappUrl = createWhatsappUrl()
 
   useEffect(() => {
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true, syncTouch: true })
@@ -85,18 +106,20 @@ function App() {
     setFormStatus('Sending...')
     setSubmissionSucceeded(false)
     const formElement = event.currentTarget
-    const form = new FormData(formElement)
+    const enquiryDetails = Object.fromEntries(new FormData(formElement).entries())
+    const fallbackWhatsappUrl = createWhatsappUrl(enquiryDetails)
 
-    // The Vite proxy sends this request to server/server.js in development.
     try {
-      const response = await fetch('/api/contact', { method: 'POST', body: form })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Request failed')
-      setFormStatus(result.message)
+      if (!Object.values(emailjsConfig).every(Boolean)) throw new Error('EmailJS is not configured.')
+      await emailjs.sendForm(emailjsConfig.serviceId, emailjsConfig.templateId, formElement, emailjsConfig.publicKey)
+      setFormStatus('Your enquiry has been sent.')
       setSubmissionSucceeded(true)
       formElement.reset()
       window.setTimeout(() => { window.location.href = whatsappUrl }, 700)
-    } catch (error) { setFormStatus(error.message) }
+    } catch {
+      setFormStatus('Email delivery failed. Opening WhatsApp with your enquiry...')
+      window.setTimeout(() => { window.location.href = fallbackWhatsappUrl }, 300)
+    }
   }
 
   return (
