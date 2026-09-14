@@ -40,26 +40,26 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [formStatus, setFormStatus] = useState('')
   const [submissionSucceeded, setSubmissionSucceeded] = useState(false)
+  const [whatsappUrl, setWhatsappUrl] = useState('')
   const [showAllProjects, setShowAllProjects] = useState(false)
   const pageRef = useRef(null)
   const lenisRef = useRef(null)
   const whatsappNumber = '919131080455'
   const createWhatsappUrl = (details = {}) => {
-    const { name = '', email = '', phone = '', message = '' } = details
+    const name = details.name?.trim() || ''
+    const email = details.email?.trim() || ''
+    const phone = details.phone?.trim() || ''
+    const message = details.message?.trim() || ''
+    const contactLines = [email && `Email: ${email}`, phone && `Phone: ${phone}`].filter(Boolean)
     const whatsappMessage = [
       'Hi Amin! I would like to discuss my interior design project.',
       '',
-      `Name: ${name || 'Not provided'}`,
-      `Email: ${email || 'Not provided'}`,
-      `Phone: ${phone || 'Not provided'}`,
-      '',
-      'Project details:',
-      message || 'I would love to share more about my project.',
+      `Name: ${name}`,
+      ...contactLines,
+      ...(message ? ['', 'Project details:', message] : []),
     ].join('\n')
     return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
   }
-  const whatsappUrl = createWhatsappUrl()
-
   useEffect(() => {
     const lenis = new Lenis({ duration: 1.15, smoothWheel: true, syncTouch: true })
     lenisRef.current = lenis
@@ -103,11 +103,28 @@ function App() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    setFormStatus('Sending...')
-    setSubmissionSucceeded(false)
     const formElement = event.currentTarget
     const enquiryDetails = Object.fromEntries(new FormData(formElement).entries())
+    const name = enquiryDetails.name?.trim() || ''
+    const email = enquiryDetails.email?.trim() || ''
+    const phone = enquiryDetails.phone?.trim() || ''
+
+    if (!name) {
+      setFormStatus('Please provide your name.')
+      setSubmissionSucceeded(false)
+      return
+    }
+
+    if (!email && !phone) {
+      setFormStatus('Please provide either your email address or phone number.')
+      setSubmissionSucceeded(false)
+      return
+    }
+
+    setFormStatus('Sending...')
+    setSubmissionSucceeded(false)
     const fallbackWhatsappUrl = createWhatsappUrl(enquiryDetails)
+    setWhatsappUrl(fallbackWhatsappUrl)
 
     try {
       if (!Object.values(emailjsConfig).every(Boolean)) throw new Error('EmailJS is not configured.')
@@ -115,7 +132,7 @@ function App() {
       setFormStatus('Your enquiry has been sent.')
       setSubmissionSucceeded(true)
       formElement.reset()
-      window.setTimeout(() => { window.location.href = whatsappUrl }, 700)
+      window.setTimeout(() => { window.location.href = fallbackWhatsappUrl }, 700)
     } catch {
       setFormStatus('Email delivery failed. Opening WhatsApp with your enquiry...')
       window.setTimeout(() => { window.location.href = fallbackWhatsappUrl }, 300)
@@ -135,7 +152,7 @@ function App() {
       <section className="source-section capabilities reveal"><div className="source-wrap"><div className="section-heading"><p className="eyebrow">Capabilities</p><span className="section-index">02</span><h2>What I <em>do</em></h2></div><div className="cap-grid"><ul>{['Space planning and furniture layout', 'Concept and mood boards', 'Colour, material, lighting and furniture selection', 'Residential and commercial interiors', '2D drawings and 3D visualisations', 'Client discussions and requirement mapping', 'Site visits and contractor coordination', 'Styling with decor and accessories'].map((item, index) => <li key={item} tabIndex="0"><span className="cap-number">0{index + 1}</span>{item}<ArrowUpRight className="cap-arrow" size={16} /></li>)}</ul><div className="skillcards"><article tabIndex="0"><span>01</span><h3>2D Planning</h3><p>AutoCAD for space planning, layouts and furniture drawings - precise dimensions built for on-site execution.</p><ArrowUpRight className="skill-arrow" size={20} /></article><article tabIndex="0"><span>02</span><h3>3D Visualisation</h3><p>SketchUp, 3ds Max, V-Ray and Enscape bring every layout to life before a single wall is touched.</p><ArrowUpRight className="skill-arrow" size={20} /></article></div></div></div></section>
       <section id="featured" className="featured-source reveal"><div className="source-wrap"><div className="section-heading"><p className="eyebrow">Featured work</p><span className="section-index">03</span><h2>Designed for <em>living.</em></h2></div><article className="featured-project"><div className="featured-copy"><p className="project-label">Project 01</p><h3>Modular Residential Kitchen</h3><div className="featured-meta"><span><b>Type</b>Residential Kitchen</span><span><b>Style</b>Modular Kitchen</span></div><p>An L-shaped modular kitchen designed for storage efficiency and smooth workflow - hob, sink, refrigerator, shutters, drawers, blind corners and open shelves arranged systematically. Multiple elevations and plan views guided accurate execution, while glass shutters and open shelving add visual appeal without compromising ergonomics or circulation.</p><button className="text-link dark-link" onClick={() => setActiveImage({ title: 'Modular Residential Kitchen', image: image('kitchenWood') })}>Open project <ArrowUpRight size={16} /></button></div><div className="featured-images"><button onClick={() => setActiveImage({ title: 'Modular Residential Kitchen - warm wood', image: image('kitchenWood') })}><img className="parallax-image" src={image('kitchenWood')} alt="Warm wood modular residential kitchen" /></button><button onClick={() => setActiveImage({ title: 'Modular Residential Kitchen - modern', image: image('kitchenModern') })}><img className="parallax-image" src={image('kitchenModern')} alt="Modern modular kitchen" /></button></div></article><article className="featured-project featured-reverse"><div className="featured-copy"><p className="project-label">Project 02</p><h3>Modular Bedroom Suite</h3><div className="featured-meta"><span><b>Type</b>Modular Bedroom</span><span><b>Style</b>Modern &amp; Classic</span></div><p>A bedroom and terrace layout detailed down to electrical symbols, switchboards and lighting points - chandelier, pendant, mirror and wall lights placed for both function and atmosphere. Dimensions, window placements, curtain pelmets and circulation were mapped for a considered, practical interior.</p><button className="text-link dark-link" onClick={() => setActiveImage({ title: 'Modular Bedroom Suite', image: image('bedroomBeige1') })}>Open project <ArrowUpRight size={16} /></button></div><div className="featured-images"><button onClick={() => setActiveImage({ title: 'Modular Bedroom Suite - bedroom', image: image('bedroomBeige1') })}><img className="parallax-image" src={image('bedroomBeige1')} alt="Beige modular bedroom suite" /></button><button onClick={() => setActiveImage({ title: 'Modular Bedroom Suite - wardrobe', image: image('bedroomWardrobe') })}><img className="parallax-image" src={image('bedroomWardrobe')} alt="Bedroom wardrobe detail" /></button></div></article></div></section>
       <section id="work" className="source-section work-source reveal"><div className="source-wrap"><div className="section-heading"><p className="eyebrow">Selected work</p><span className="section-index">04</span><h2>Other <em>projects</em></h2><p>A wider look at recent kitchens, bedrooms and living spaces designed and detailed end to end.</p></div><div className="project-grid">{projects.slice(0, showAllProjects ? projects.length : 5).map((project) => <button key={project.title} className="project-card" onClick={() => setActiveImage(project)}><img src={project.image} alt={project.title} /><span><strong>{project.title}</strong><small>{project.category}</small></span><ArrowUpRight size={18} /></button>)}</div><button className="projects-toggle" onClick={() => setShowAllProjects(!showAllProjects)}>{showAllProjects ? 'Show fewer projects' : 'View more projects'} <ArrowUpRight size={16} /></button></div></section>
-      <section id="contact" className="contact-source reveal"><div className="contact-visual"><img src={image('hero')} alt="Warm modern living and dining interior" /><div><p className="eyebrow">Get in touch</p><p className="quote">Let&apos;s turn your space into something that feels entirely yours.</p></div></div><div className="contact-form-side"><p className="eyebrow">Let&apos;s work together</p><h2>Start your <em>project</em></h2><form onSubmit={handleSubmit}><label>Name<input name="name" required placeholder="Your full name" /></label><label>Email<input type="email" name="email" required placeholder="you@email.com" /></label><label>Phone<input name="phone" placeholder="+91 ..." /></label><label>Tell me about it<textarea name="message" required rows="3" placeholder="A few words about your project..." /></label><button className="light-button" type="submit">Send enquiry <ArrowUpRight size={17} /></button>{formStatus && <p className="form-status">{formStatus}</p>}{submissionSucceeded && <a className="whatsapp-button" href={whatsappUrl} target="_blank" rel="noreferrer">Continue on WhatsApp <ArrowUpRight size={17} /></a>}</form><div className="contact-details"><span><b>Email</b>aaminkhan14052005@gmail.com</span><span><b>Phone</b>+91 91310 80455</span></div></div></section>
+      <section id="contact" className="contact-source reveal"><div className="contact-visual"><img src={image('hero')} alt="Warm modern living and dining interior" /><div><p className="eyebrow">Get in touch</p><p className="quote">Let&apos;s turn your space into something that feels entirely yours.</p></div></div><div className="contact-form-side"><p className="eyebrow">Let&apos;s work together</p><h2>Start your <em>project</em></h2><form onSubmit={handleSubmit}><label>Name<input name="name" required placeholder="Your full name" /></label><label>Email<input type="email" name="email" placeholder="you@email.com" /></label><label>Phone<input name="phone" placeholder="+91 ..." /></label><label>Tell me about it<textarea name="message" rows="3" placeholder="A few words about your project..." /></label><button className="light-button" type="submit">Send enquiry <ArrowUpRight size={17} /></button>{formStatus && <p className="form-status">{formStatus}</p>}{submissionSucceeded && <a className="whatsapp-button" href={whatsappUrl} target="_blank" rel="noreferrer">Continue on WhatsApp <ArrowUpRight size={17} /></a>}</form><div className="contact-details"><span><b>Email</b>aaminkhan14052005@gmail.com</span><span><b>Phone</b>+91 91310 80455</span></div></div></section>
       <footer><span>© 2026 Amin Khan</span><span>Interior Design Studio - Bhopal</span><a className="social-link" href="https://www.instagram.com/aminnkhannnn?stkn=cWRwa2E0OWxtc2Rz" target="_blank" rel="noreferrer" aria-label="Open Amin Khan on Instagram">Instagram <ArrowUpRight size={15} /></a><button onClick={() => scrollTo('#top')}>Back to top <ArrowUpRight size={15} /></button></footer>
       {activeImage && <div className="lightbox" role="dialog" aria-modal="true" aria-label={`${activeImage.title} preview`} onClick={() => setActiveImage(null)}><button className="lightbox-close" onClick={() => setActiveImage(null)} aria-label="Close image"><X size={24} /></button><img src={activeImage.image} alt={activeImage.title} onClick={(event) => event.stopPropagation()} /><p>{activeImage.title} <span>Click anywhere to close</span></p></div>}
     </main>
